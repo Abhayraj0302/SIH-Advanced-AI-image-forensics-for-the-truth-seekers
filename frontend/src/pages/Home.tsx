@@ -10,6 +10,46 @@ import {
 } from 'lucide-react';
 import { scrollToSection } from '../utils/smoothScroll';
 
+// Static card data — defined outside component to avoid re-creation on every render (OPT-4)
+const coreCards = [
+  {
+    id: 'ela',
+    title: 'Error Level Analysis (ELA)',
+    desc: 'Highlights compression artifacts. Measures differences in JPEG compression error rates across high-frequency boundaries to surface modified regions.',
+    badge: 'Quantization matrix differential',
+    icon: Layers,
+    iconColor: 'text-orange-400',
+    iconBg: 'bg-orange-500/10 border-orange-500/25',
+    glowColor: 'hover:border-orange-500/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.2)]',
+    accentDot: 'bg-orange-400'
+  },
+  {
+    id: 'metadata',
+    title: 'Metadata & C2PA Extraction',
+    desc: 'Verifies digital provenance. Inspects cryptographic Content Credentials manifests, EXIF headers, camera hardware serials, and timestamps.',
+    badge: 'Cryptographic manifest validation',
+    icon: ShieldCheck,
+    iconColor: 'text-emerald-400',
+    iconBg: 'bg-emerald-500/10 border-emerald-500/25',
+    glowColor: 'hover:border-emerald-500/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.2)]',
+    accentDot: 'bg-emerald-400'
+  },
+  {
+    id: 'frequency',
+    title: 'Frequency & Noise Analysis',
+    desc: 'Detects GAN/Diffusion artifacts. Applies 2D Discrete Fourier Transforms (DFT) and Laplacian noise variance to uncover generative upsampling grids.',
+    badge: '2D Fourier spectral peak detection',
+    icon: Activity,
+    iconColor: 'text-purple-400',
+    iconBg: 'bg-purple-500/10 border-purple-500/25',
+    glowColor: 'hover:border-purple-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)]',
+    accentDot: 'bg-purple-400'
+  }
+];
+
+// Duplicate cards for seamless continuous infinite looping
+const marqueeCards = [...coreCards, ...coreCards, ...coreCards];
+
 export const Home: React.FC = () => {
   const location = useLocation();
 
@@ -47,46 +87,6 @@ export const Home: React.FC = () => {
       }
     }
   };
-
-  // The 3 core inspection cards
-  const coreCards = [
-    {
-      id: 'ela',
-      title: 'Error Level Analysis (ELA)',
-      desc: 'Highlights compression artifacts. Measures differences in JPEG compression error rates across high-frequency boundaries to surface modified regions.',
-      badge: 'Quantization matrix differential',
-      icon: Layers,
-      iconColor: 'text-orange-400',
-      iconBg: 'bg-orange-500/10 border-orange-500/25',
-      glowColor: 'hover:border-orange-500/50 hover:shadow-[0_0_30px_rgba(249,115,22,0.2)]',
-      accentDot: 'bg-orange-400'
-    },
-    {
-      id: 'metadata',
-      title: 'Metadata & C2PA Extraction',
-      desc: 'Verifies digital provenance. Inspects cryptographic Content Credentials manifests, EXIF headers, camera hardware serials, and timestamps.',
-      badge: 'Cryptographic manifest validation',
-      icon: ShieldCheck,
-      iconColor: 'text-emerald-400',
-      iconBg: 'bg-emerald-500/10 border-emerald-500/25',
-      glowColor: 'hover:border-emerald-500/50 hover:shadow-[0_0_30px_rgba(16,185,129,0.2)]',
-      accentDot: 'bg-emerald-400'
-    },
-    {
-      id: 'frequency',
-      title: 'Frequency & Noise Analysis',
-      desc: 'Detects GAN/Diffusion artifacts. Applies 2D Discrete Fourier Transforms (DFT) and Laplacian noise variance to uncover generative upsampling grids.',
-      badge: '2D Fourier spectral peak detection',
-      icon: Activity,
-      iconColor: 'text-purple-400',
-      iconBg: 'bg-purple-500/10 border-purple-500/25',
-      glowColor: 'hover:border-purple-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)]',
-      accentDot: 'bg-purple-400'
-    }
-  ];
-
-  // Duplicate cards for seamless continuous infinite looping
-  const marqueeCards = [...coreCards, ...coreCards, ...coreCards];
 
   return (
     <div className="w-full bg-[#090A0E] min-h-screen text-gray-100 selection:bg-orange-600 selection:text-white">

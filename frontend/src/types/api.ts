@@ -27,7 +27,13 @@ export interface ForensicSignals {
   ela?: ForensicSignalItem;
   frequency?: ForensicSignalItem;
   noise?: ForensicSignalItem;
-  synthId?: ForensicSignalItem;
+  synthId?: ForensicSignalItem & {
+    c2pa?: ForensicSignalItem;
+    pixel?: ForensicSignalItem;
+  };
+  prnu?: ForensicSignalItem;
+  jpeg_ghost?: ForensicSignalItem;
+  cfa_demosaic?: ForensicSignalItem;
 }
 
 export interface DetectResponse {

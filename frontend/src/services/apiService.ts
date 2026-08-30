@@ -67,7 +67,9 @@ export class ApiService {
       return await response.json();
     } catch (err: any) {
       console.error('[ApiService] Detection API failed:', err);
-      throw new Error(err.message || 'Failed to connect to the forensics engine for detection.');
+      const rethrown = new Error(err.message || 'Failed to connect to the forensics engine for detection.');
+      (rethrown as any).code = err.code;
+      throw rethrown;
     }
   }
 }

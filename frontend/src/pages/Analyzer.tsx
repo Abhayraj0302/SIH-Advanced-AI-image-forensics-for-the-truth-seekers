@@ -14,7 +14,7 @@ import { AnalysisData } from '../types/forensics';
 import { ApiService } from '../services/apiService';
 
 // Smooth numerical count-up component from 0 to target value
-const AnimatedCounter: React.FC<{ value: number; duration?: number; suffix?: string }> = ({
+const AnimatedCounter: React.FC<{ value: number; duration?: number; suffix?: string }> = React.memo(({
   value,
   duration = 1100,
   suffix = '%'
@@ -43,7 +43,7 @@ const AnimatedCounter: React.FC<{ value: number; duration?: number; suffix?: str
   }, [value, duration]);
 
   return <span>{displayValue}{suffix}</span>;
-};
+});
 
 export const Analyzer: React.FC = () => {
   const [file, setFile] = useState<File | null>(null);
@@ -67,9 +67,11 @@ export const Analyzer: React.FC = () => {
     }
   }, [results]);
 
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/tiff'];
+
   const handleFileUpload = async (selectedFile: File) => {
-    if (!selectedFile.type.startsWith('image/')) {
-      setError('Please upload a valid image file (JPEG, PNG, WebP).');
+    if (!ALLOWED_TYPES.includes(selectedFile.type.toLowerCase())) {
+      setError(`Unsupported format (${selectedFile.type || 'unknown'}). Please upload a JPEG, PNG, WebP, or TIFF image.`);
       return;
     }
 
@@ -78,6 +80,10 @@ export const Analyzer: React.FC = () => {
     setFile(selectedFile);
     setResults(null);
 
+    // Revoke previous blob URL to prevent memory leak (BUG-10)
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
     const objectUrl = URL.createObjectURL(selectedFile);
     setPreviewUrl(objectUrl);
 
@@ -258,7 +264,7 @@ export const Analyzer: React.FC = () => {
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/webp,image/tiff"
           className="hidden"
           onChange={handleInputChange}
         />
@@ -301,38 +307,85 @@ export const Analyzer: React.FC = () => {
         )}
 
         {/* ========================================================================= */}
-        {/* 2. LOADING STATE (PULSING / SCANNING)                                      */}
+        {/* 2. LOADING STATE — FULL-WIDTH FORENSIC SCANNER                              */}
         {/* ========================================================================= */}
         {isLoading && (
-          <div className="w-full bg-[#11141E] rounded-3xl p-10 sm:p-14 border border-white/10 shadow-2xl flex flex-col items-center justify-center text-center">
-            {previewUrl && (
-              <div className="relative w-36 h-36 rounded-2xl overflow-hidden mb-6 border-2 border-orange-500/60 shadow-lg bg-black">
-                <img
-                  src={previewUrl}
-                  alt="Uploaded target"
-                  className="w-full h-full object-cover opacity-85"
-                />
-                <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-orange-400 to-transparent animate-pulse top-1/2 -translate-y-1/2" />
-                <div className="absolute inset-0 bg-orange-600/20" />
+          <div className="w-full space-y-6">
+            {/* Main Scanner Panel */}
+            <div className="w-full bg-[#11141E] rounded-3xl p-5 sm:p-8 border border-orange-500/30 shadow-2xl shadow-orange-500/5">
+              {/* Scanner Header Bar */}
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-2.5 h-2.5 rounded-full bg-orange-500 animate-pulse" />
+                  <span className="text-xs font-mono font-bold text-orange-400 uppercase tracking-wider">
+                    Forensic Scan In Progress
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-12 h-12 rounded-full border-[3px] border-orange-900 border-t-orange-500 animate-spin animate-ring-glow" />
+                </div>
               </div>
-            )}
 
-            <div className="relative mb-4">
-              <div className="w-12 h-12 rounded-full border-4 border-orange-900 border-t-orange-500 animate-spin" />
-            </div>
+              {/* Image Scanner Container */}
+              {previewUrl && (
+                <div className="relative w-full aspect-video max-h-[420px] rounded-2xl overflow-hidden border-2 border-orange-500/40 bg-black select-none">
+                  {/* The uploaded image */}
+                  <img
+                    src={previewUrl}
+                    alt="Scanning target"
+                    className="w-full h-full object-contain opacity-80"
+                  />
 
-            <h3 className="text-lg font-bold text-white mb-1">
-              Executing Multi-Model Forensic Passes...
-            </h3>
-            <p className="text-xs text-gray-400 max-w-md animate-pulse">
-              Computing discrete Fourier transforms, quantization matrices, and inspecting cryptographic provenance credentials.
-            </p>
+                  {/* Holographic orange tint overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-orange-500/10 via-transparent to-orange-500/15 pointer-events-none" />
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-[11px] font-mono text-gray-400">
-              <span className="bg-[#0D0F16] border border-white/10 px-2.5 py-1 rounded-md">2D-FFT</span>
-              <span className="bg-[#0D0F16] border border-white/10 px-2.5 py-1 rounded-md">ELA Matrix</span>
-              <span className="bg-[#0D0F16] border border-white/10 px-2.5 py-1 rounded-md">C2PA Manifest</span>
-              <span className="bg-[#0D0F16] border border-white/10 px-2.5 py-1 rounded-md">Laplacian Noise</span>
+                  {/* Sweeping horizontal laser line */}
+                  <div className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-orange-400 to-transparent shadow-[0_0_20px_4px_rgba(249,115,22,0.6),0_0_60px_8px_rgba(249,115,22,0.2)] animate-scan-laser pointer-events-none" />
+
+                  {/* Blueprint grid overlay */}
+                  <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(249,115,22,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(249,115,22,0.08)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none animate-grid-shimmer" />
+
+                  {/* Corner scanner brackets — top-left */}
+                  <div className="absolute top-3 left-3 w-6 h-6 border-t-2 border-l-2 border-orange-400 pointer-events-none animate-bracket-pulse" />
+                  {/* Corner scanner brackets — top-right */}
+                  <div className="absolute top-3 right-3 w-6 h-6 border-t-2 border-r-2 border-orange-400 pointer-events-none animate-bracket-pulse" style={{ animationDelay: '0.5s' }} />
+                  {/* Corner scanner brackets — bottom-left */}
+                  <div className="absolute bottom-3 left-3 w-6 h-6 border-b-2 border-l-2 border-orange-400 pointer-events-none animate-bracket-pulse" style={{ animationDelay: '1s' }} />
+                  {/* Corner scanner brackets — bottom-right */}
+                  <div className="absolute bottom-3 right-3 w-6 h-6 border-b-2 border-r-2 border-orange-400 pointer-events-none animate-bracket-pulse" style={{ animationDelay: '1.5s' }} />
+
+                  {/* Center target reticle */}
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                    <div className="w-10 h-10 rounded-full border border-orange-400/40" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-orange-400/80 animate-ping" />
+                    {/* Crosshair lines */}
+                    <div className="absolute top-1/2 left-0 w-full h-[1px] bg-orange-400/20" />
+                    <div className="absolute top-0 left-1/2 h-full w-[1px] bg-orange-400/20" />
+                  </div>
+
+                  {/* Bottom status bar overlay */}
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent pt-8 pb-3 px-4 pointer-events-none">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+                        <span className="text-[10px] font-mono font-bold text-orange-300 uppercase tracking-widest">
+                          Analyzing Pixel Matrix
+                        </span>
+                      </div>
+                      <span className="text-[10px] font-mono text-gray-400">
+                        {file?.name || 'target.img'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Scanning status text */}
+              <div className="mt-5 text-center">
+                <h3 className="text-base sm:text-lg font-bold text-white mb-1">
+                  Executing Multi-Model Forensic Passes...
+                </h3>
+              </div>
             </div>
           </div>
         )}
@@ -387,69 +440,69 @@ export const Analyzer: React.FC = () => {
           <div className="space-y-6">
             {/* Top Overview Card */}
             <div className="bg-[#11141E] rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-white/10">
-                <div className="flex items-center gap-4 sm:gap-6">
-                  {previewUrl && (
-                    <div 
-                      className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-2xl overflow-hidden border-2 border-orange-500/50 shrink-0 shadow-xl bg-black cursor-zoom-in group select-none"
-                      onClick={() => setIsImageEnlarged(true)}
-                      title="Click to view full image"
+              {/* Full-width image display */}
+              {previewUrl && (
+                <div 
+                  className="relative w-full max-h-[380px] rounded-2xl overflow-hidden border-2 border-orange-500/40 mb-6 bg-black cursor-zoom-in group select-none"
+                  onClick={() => setIsImageEnlarged(true)}
+                  title="Click to view full image"
+                >
+                  <img
+                    src={previewUrl}
+                    alt="Analyzed target"
+                    className="w-full h-full max-h-[376px] object-contain transition-transform duration-300 group-hover:scale-[1.02]"
+                  />
+
+                  {/* Holographic tint overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-b from-orange-500/5 via-transparent to-orange-500/10 pointer-events-none" />
+
+                  {/* Scanning laser line */}
+                  <div className="absolute inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-orange-400 to-transparent shadow-[0_0_12px_#FF7700] animate-scan-vertical pointer-events-none" />
+
+                  {/* Blueprint grid */}
+                  <div className="absolute inset-0 bg-[linear-gradient(to_right,#FF770010_1px,transparent_1px),linear-gradient(to_bottom,#FF770010_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-40" />
+
+                  {/* Corner brackets */}
+                  <div className="absolute top-2.5 left-2.5 w-4 h-4 border-t-2 border-l-2 border-orange-400/70 pointer-events-none" />
+                  <div className="absolute top-2.5 right-2.5 w-4 h-4 border-t-2 border-r-2 border-orange-400/70 pointer-events-none" />
+                  <div className="absolute bottom-2.5 left-2.5 w-4 h-4 border-b-2 border-l-2 border-orange-400/70 pointer-events-none" />
+                  <div className="absolute bottom-2.5 right-2.5 w-4 h-4 border-b-2 border-r-2 border-orange-400/70 pointer-events-none" />
+
+                  {/* Status chip */}
+                  <div className="absolute bottom-2.5 inset-x-0 flex justify-center pointer-events-none">
+                    <span className="text-[9px] font-mono font-bold text-orange-300 bg-black/80 backdrop-blur-sm px-2 py-0.5 rounded-md border border-orange-500/30 tracking-wider uppercase">
+                      Scan Complete — Click to Enlarge
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* File info + verdict row */}
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-6 border-b border-white/10">
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white">
+                    {results.filename}
+                  </h2>
+                  
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
+                        results.overallProbability > 50
+                          ? 'bg-red-500/15 text-red-400 border-red-500/30'
+                          : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                      }`}
                     >
-                      <img
-                        src={previewUrl}
-                        alt="Analyzed target"
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
+                      {results.overallProbability > 50 ? (
+                        <ShieldAlert className="w-3.5 h-3.5" />
+                      ) : (
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                      )}
+                      <span>{results.verdict}</span>
+                    </span>
 
-                      {/* Continuous Forensic Scanning Laser Overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-b from-orange-500/10 via-transparent to-orange-500/15 pointer-events-none" />
-                      <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-orange-400 to-transparent shadow-[0_0_12px_#FF7700] animate-scan-vertical pointer-events-none" />
-                      
-                      {/* Blueprint Grid Overlay */}
-                      <div className="absolute inset-0 bg-[linear-gradient(to_right,#FF770018_1px,transparent_1px),linear-gradient(to_bottom,#FF770018_1px,transparent_1px)] bg-[size:10px_10px] pointer-events-none opacity-50" />
-
-                      {/* Scanner Corner Crosshair Brackets */}
-                      <div className="absolute top-1.5 left-1.5 w-2.5 h-2.5 border-t-2 border-l-2 border-orange-400 pointer-events-none" />
-                      <div className="absolute top-1.5 right-1.5 w-2.5 h-2.5 border-t-2 border-r-2 border-orange-400 pointer-events-none" />
-                      <div className="absolute bottom-1.5 left-1.5 w-2.5 h-2.5 border-b-2 border-l-2 border-orange-400 pointer-events-none" />
-                      <div className="absolute bottom-1.5 right-1.5 w-2.5 h-2.5 border-b-2 border-r-2 border-orange-400 pointer-events-none" />
-
-                      {/* Sub-Pixel Laser Target Center Dot */}
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-orange-400/80 animate-ping pointer-events-none" />
-
-                      {/* Active Telemetry Chip */}
-                      <div className="absolute bottom-1.5 inset-x-0 flex justify-center pointer-events-none">
-                        <span className="text-[8px] font-mono font-extrabold text-orange-300 bg-black/80 backdrop-blur-sm px-1.5 py-0.5 rounded border border-orange-500/40 tracking-wider">
-                          SCAN ACTIVE
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                  <div>
-                    <h2 className="text-xl sm:text-2xl font-bold text-white mt-1">
-                      {results.filename}
-                    </h2>
-                    
-                    <div className="flex flex-wrap items-center gap-2 mt-2">
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
-                          results.overallProbability > 50
-                            ? 'bg-red-500/15 text-red-400 border-red-500/30'
-                            : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                        }`}
-                      >
-                        {results.overallProbability > 50 ? (
-                          <ShieldAlert className="w-3.5 h-3.5" />
-                        ) : (
-                          <ShieldCheck className="w-3.5 h-3.5" />
-                        )}
-                        <span>{results.verdict}</span>
-                      </span>
-
-                      <span className="text-xs text-gray-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full font-mono font-medium">
-                        {results.confidenceGrade}
-                      </span>
-                    </div>
+                    <span className="text-xs text-gray-400 bg-white/5 border border-white/10 px-2.5 py-1 rounded-full font-mono font-medium">
+                      {results.confidenceGrade}
+                    </span>
                   </div>
                 </div>
 
