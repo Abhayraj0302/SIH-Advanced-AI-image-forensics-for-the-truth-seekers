@@ -1,18 +1,39 @@
 import sharp from 'sharp';
 import { clamp01, THRESHOLDS } from './config.js';
 
-export async function analyzeNoise(buffer) {
+/**
+ * Local Noise Consistency analysis via block-wise noise variance.
+ *
+ * @param {Buffer} buffer - Original image buffer
+ * @param {object} [preDecoded] - Optional pre-decoded grayscale { data, info }
+ */
+export async function analyzeNoise(buffer, preDecoded) {
   try {
-    const { data, info } = await sharp(buffer)
-      .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
-      .grayscale()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
+    let data, width, height;
 
-    const width = info.width;
-    const height = info.height;
+    if (preDecoded) {
+      // Resize pre-decoded grayscale to <=512x512
+      const resized = await sharp(preDecoded.data, {
+        raw: { width: preDecoded.info.width, height: preDecoded.info.height, channels: 1 }
+      })
+        .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      data = resized.data;
+      width = resized.info.width;
+      height = resized.info.height;
+    } else {
+      const result = await sharp(buffer)
+        .resize(512, 512, { fit: 'inside', withoutEnlargement: true })
+        .grayscale()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      data = result.data;
+      width = result.info.width;
+      height = result.info.height;
+    }
+
     const blockSize = 32;
-
     const blockVariances = [];
 
     for (let startY = 1; startY + blockSize <= height; startY += blockSize) {

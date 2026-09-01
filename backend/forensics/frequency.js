@@ -2,30 +2,38 @@ import sharp from 'sharp';
 import FFT from 'fft.js';
 import { clamp01, THRESHOLDS } from './config.js';
 
-export async function analyzeFrequency(buffer) {
+/**
+ * Frequency analysis via column-wise 1D FFT to detect GAN upsampling artifacts.
+ *
+ * @param {Buffer} buffer - Original image buffer
+ * @param {object} [preDecoded] - Optional pre-decoded grayscale { data, info }
+ */
+export async function analyzeFrequency(buffer, preDecoded) {
   try {
     const N = 256;
-    const { data } = await sharp(buffer)
-      .resize(N, N, { fit: 'fill' })
-      .grayscale()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
+    let data;
 
-    const f = new FFT(N);
-    const rowInput = new Float64Array(N);
-    const rowOutput = f.createComplexArray();
-
-    // 1. Run real FFT per row
-    for (let r = 0; r < N; r++) {
-      const rowOffset = r * N;
-      for (let c = 0; c < N; c++) {
-        rowInput[c] = data[rowOffset + c];
-      }
-      f.realTransform(rowOutput, rowInput);
-      f.completeSpectrum(rowOutput);
+    if (preDecoded) {
+      // Resize pre-decoded grayscale to NxN for FFT
+      const resized = await sharp(preDecoded.data, {
+        raw: { width: preDecoded.info.width, height: preDecoded.info.height, channels: 1 }
+      })
+        .resize(N, N, { fit: 'fill' })
+        .raw()
+        .toBuffer();
+      data = resized;
+    } else {
+      const result = await sharp(buffer)
+        .resize(N, N, { fit: 'fill' })
+        .grayscale()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      data = result.data;
     }
 
-    // 2. Run real FFT per column on the *original* grayscale column data
+    const f = new FFT(N);
+
+    // Accumulate frequency energy from column FFTs (mid-high frequency bins)
     const colInput = new Float64Array(N);
     const colOutput = f.createComplexArray();
 

@@ -1,28 +1,50 @@
 import sharp from 'sharp';
 import { clamp01 } from './config.js';
 
-export async function analyzeCfaDemosaic(buffer) {
+/**
+ * CFA Demosaicing check: real cameras use Bayer filters creating 2x2 periodic
+ * correlations in RGB channels. AI models lack these artifacts.
+ *
+ * @param {Buffer} buffer - Original image buffer
+ * @param {object} [preDecodedRgb] - Optional pre-decoded RGB { data, info } (channels=3)
+ */
+export async function analyzeCfaDemosaic(buffer, preDecodedRgb) {
   try {
-    // Color Filter Array (CFA) Demosaicing check.
-    // Real cameras use Bayer filters and demosaicing, creating 2x2 periodic correlations in RGB channels.
-    // AI generative models synthesize direct continuous RGB fields without Bayer artifacts.
-
     const N = 256;
 
-    // BUG FIX: Use fit:'fill' to guarantee exactly NxN output (3*N*N bytes for RGB).
-    // fit:'inside' preserves aspect ratio and can produce non-square output,
-    // making the hardcoded stride = N*3 and loop bound y < N wrong.
-    const { data: rgb, info } = await sharp(buffer)
-      .resize(N, N, { fit: 'fill' })
-      .removeAlpha()
-      .raw()
-      .toBuffer({ resolveWithObject: true });
+    let rgb, width, height, channels;
 
-    const width = info.width;
-    const height = info.height;
-    const channels = info.channels;
+    if (preDecodedRgb) {
+      // Resize pre-decoded RGB to NxN
+      const result = await sharp(preDecodedRgb.data, {
+        raw: {
+          width: preDecodedRgb.info.width,
+          height: preDecodedRgb.info.height,
+          channels: preDecodedRgb.info.channels
+        }
+      })
+        .resize(N, N, { fit: 'fill' })
+        .removeAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      rgb = result.data;
+      width = result.info.width;
+      height = result.info.height;
+      channels = result.info.channels;
+    } else {
+      // BUG FIX: Use fit:'fill' to guarantee exactly NxN output (3*N*N bytes for RGB).
+      const result = await sharp(buffer)
+        .resize(N, N, { fit: 'fill' })
+        .removeAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      rgb = result.data;
+      width = result.info.width;
+      height = result.info.height;
+      channels = result.info.channels;
+    }
+
     const stride = width * channels;
-
     let bayerArtifacts = 0;
 
     for (let y = 0; y < height - 2; y += 2) {

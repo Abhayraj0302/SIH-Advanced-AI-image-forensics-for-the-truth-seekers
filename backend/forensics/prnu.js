@@ -1,18 +1,35 @@
 import sharp from 'sharp';
 import { clamp01 } from './config.js';
 
-export async function analyzePrnu(buffer) {
+/**
+ * PRNU (Photo-Response Non-Uniformity) analysis.
+ * Checks for consistent noise fingerprint left by hardware camera sensors.
+ *
+ * @param {Buffer} buffer - Original image buffer
+ * @param {object} [preDecoded] - Optional pre-decoded grayscale { data, info }
+ */
+export async function analyzePrnu(buffer, preDecoded) {
   try {
-    // PRNU (Photo-Response Non-Uniformity) checks for a consistent noise fingerprint
-    // left by hardware camera sensors. Generative AI lacks this physical consistency.
-
     const N = 512;
 
-    // BUG FIX: Sharp pipelines are single-use. Create two separate instances.
-    const [original, blurred] = await Promise.all([
-      sharp(buffer).resize(N, N, { fit: 'fill' }).grayscale().raw().toBuffer(),
-      sharp(buffer).resize(N, N, { fit: 'fill' }).blur(2).grayscale().raw().toBuffer()
-    ]);
+    let original, blurred;
+
+    if (preDecoded) {
+      // Resize pre-decoded grayscale to NxN
+      const rawOpts = {
+        raw: { width: preDecoded.info.width, height: preDecoded.info.height, channels: 1 }
+      };
+      [original, blurred] = await Promise.all([
+        sharp(preDecoded.data, rawOpts).resize(N, N, { fit: 'fill' }).raw().toBuffer(),
+        sharp(preDecoded.data, rawOpts).resize(N, N, { fit: 'fill' }).blur(2).raw().toBuffer()
+      ]);
+    } else {
+      // BUG FIX: Sharp pipelines are single-use. Create two separate instances.
+      [original, blurred] = await Promise.all([
+        sharp(buffer).resize(N, N, { fit: 'fill' }).grayscale().raw().toBuffer(),
+        sharp(buffer).resize(N, N, { fit: 'fill' }).blur(2).grayscale().raw().toBuffer()
+      ]);
+    }
 
     const length = Math.min(original.length, blurred.length);
     let sumResidual = 0;

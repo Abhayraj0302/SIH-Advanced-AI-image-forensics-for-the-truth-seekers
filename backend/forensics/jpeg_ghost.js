@@ -1,19 +1,36 @@
 import sharp from 'sharp';
 import { clamp01 } from './config.js';
 
-export async function analyzeJpegGhost(buffer) {
+/**
+ * JPEG Ghosting analysis: detects spliced/inpainted regions saved at different
+ * compression quality than the rest of the image.
+ *
+ * @param {Buffer} buffer - Original image buffer (always needed for JPEG recompress)
+ * @param {object} [preDecoded] - Optional pre-decoded grayscale { data, info }
+ */
+export async function analyzeJpegGhost(buffer, preDecoded) {
   try {
-    // JPEG Ghosting detects spliced/inpainted regions that were saved at a different
-    // compression quality than the rest of the image (often seen in AI inpainting).
-
     const N = 256;
 
-    // BUG FIX: Sharp pipelines are single-use. Create separate instances for each operation.
-    // Also use fit:'fill' to guarantee NxN output so buffer lengths match.
-    const [original, resavedBuffer] = await Promise.all([
-      sharp(buffer).resize(N, N, { fit: 'fill' }).grayscale().raw().toBuffer(),
-      sharp(buffer).resize(N, N, { fit: 'fill' }).jpeg({ quality: 65 }).toBuffer()
-    ]);
+    let original;
+
+    if (preDecoded) {
+      // Resize pre-decoded grayscale to NxN
+      original = await sharp(preDecoded.data, {
+        raw: { width: preDecoded.info.width, height: preDecoded.info.height, channels: 1 }
+      })
+        .resize(N, N, { fit: 'fill' })
+        .raw()
+        .toBuffer();
+    } else {
+      original = await sharp(buffer).resize(N, N, { fit: 'fill' }).grayscale().raw().toBuffer();
+    }
+
+    // Re-save at Q=65 (must use original buffer for realistic JPEG compression)
+    const resavedBuffer = await sharp(buffer)
+      .resize(N, N, { fit: 'fill' })
+      .jpeg({ quality: 65 })
+      .toBuffer();
 
     const resaved = await sharp(resavedBuffer)
       .grayscale()

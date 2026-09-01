@@ -5,6 +5,8 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import multer from 'multer';
 import sharp from 'sharp';
 import { GoogleGenAI, Type } from '@google/genai';
@@ -21,23 +23,68 @@ const PORT = Number(process.env.PORT) || 3001;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
 const IMAGE_TTL_MS = 15 * 60 * 1000; // 15 minutes
+const MAX_IMAGE_STORE_SIZE = 500; // Maximum in-memory images (LRU cap)
+const GEMINI_TIMEOUT_MS = 30_000; // 30-second Gemini API timeout
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/tiff'];
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Module-level Gemini singleton (avoids re-instantiation per request)
 const genaiInstance = process.env.GEMINI_API_KEY
   ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
   : null;
 
-// 2. CORS configuration
+// =========================================================================
+// MIDDLEWARE
+// =========================================================================
+
+// Security headers (CSP, X-Content-Type-Options, etc.)
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP for SPA with inline styles
+  crossOriginEmbedderPolicy: false
+}));
+
+// CORS configuration
 const corsOrigin = process.env.FRONTEND_ORIGIN
   ? process.env.FRONTEND_ORIGIN.split(',').map((s) => s.trim())
   : true;
 
 app.use(cors({ origin: corsOrigin, credentials: true }));
+
+// Apply rate limiting to all API routes
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60, // limit each IP to 60 requests per minute
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api/', apiLimiter);
 app.use(express.json({ limit: '10mb' }));
 
-// 3. In-memory Map for storing uploaded images
+// =========================================================================
+// IN-MEMORY IMAGE STORE WITH LRU EVICTION
+// =========================================================================
 const images = new Map();
+
+/**
+ * Store an image with LRU eviction when the store exceeds MAX_IMAGE_STORE_SIZE.
+ * Evicts the oldest entry by uploadedAt timestamp.
+ */
+function storeImage(imageId, imageData) {
+  // Evict oldest entries if at capacity
+  while (images.size >= MAX_IMAGE_STORE_SIZE) {
+    let oldestKey = null;
+    let oldestTime = Infinity;
+    for (const [key, item] of images.entries()) {
+      if (item.uploadedAt < oldestTime) {
+        oldestTime = item.uploadedAt;
+        oldestKey = key;
+      }
+    }
+    if (oldestKey) images.delete(oldestKey);
+    else break;
+  }
+  images.set(imageId, imageData);
+}
 
 // Background purge every 15 minutes (unreferenced so it doesn't block process exit)
 const cleanupTimer = setInterval(() => {
@@ -50,7 +97,9 @@ const cleanupTimer = setInterval(() => {
 }, IMAGE_TTL_MS);
 cleanupTimer.unref();
 
-// 4. Multer configuration
+// =========================================================================
+// MULTER CONFIGURATION
+// =========================================================================
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -65,7 +114,9 @@ const upload = multer({
   }
 });
 
-// Helper to classify and format Gemini errors
+// =========================================================================
+// HELPER: CLASSIFY GEMINI ERRORS
+// =========================================================================
 function handleGeminiError(err, modelName, res) {
   console.error('[Gemini API Error]:', err);
   const msg = (err.message || '').toLowerCase();
@@ -92,6 +143,14 @@ function handleGeminiError(err, modelName, res) {
       success: false,
       code: 'GEMINI_RATE_LIMITED',
       error: 'Too many requests right now — please wait and try again.'
+    });
+  }
+
+  if (msg.includes('abort') || msg.includes('timed out') || msg.includes('timeout')) {
+    return res.status(504).json({
+      success: false,
+      code: 'GEMINI_TIMEOUT',
+      error: 'Gemini analysis timed out. Please try again.'
     });
   }
 
@@ -127,7 +186,8 @@ function handleGeminiError(err, modelName, res) {
 app.get('/health', (req, res) => {
   res.json({
     ok: true,
-    geminiConfigured: Boolean(process.env.GEMINI_API_KEY)
+    geminiConfigured: Boolean(process.env.GEMINI_API_KEY),
+    imageStoreSize: images.size
   });
 });
 
@@ -145,7 +205,7 @@ app.post('/api/v1/upload', upload.single('file'), (req, res) => {
     const mimeType = req.file.mimetype.toLowerCase();
     const subtype = mimeType.split('/')[1] || 'JPEG';
 
-    images.set(imageId, {
+    storeImage(imageId, {
       buffer: req.file.buffer,
       mimeType,
       filename: req.file.originalname || `upload_${imageId}.${subtype}`,
@@ -173,6 +233,14 @@ app.post('/api/v1/upload', upload.single('file'), (req, res) => {
 // 3. GET /media/:imageId
 app.get('/media/:imageId', (req, res) => {
   const { imageId } = req.params;
+
+  if (!UUID_REGEX.test(imageId)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid image ID format.'
+    });
+  }
+
   const imageItem = images.get(imageId);
 
   if (!imageItem) {
@@ -189,7 +257,15 @@ app.get('/media/:imageId', (req, res) => {
 app.post('/api/v1/detect', async (req, res) => {
   const { imageId, mode = 'deep_scan', sensitivity = 85 } = req.body || {};
 
-  if (!imageId || !images.has(imageId)) {
+  // Validate imageId format
+  if (!imageId || !UUID_REGEX.test(imageId)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid or missing imageId.'
+    });
+  }
+
+  if (!images.has(imageId)) {
     return res.status(404).json({
       success: false,
       error: 'Image expired. Please upload it again.'
@@ -206,29 +282,50 @@ app.post('/api/v1/detect', async (req, res) => {
 
   const imageRecord = images.get(imageId);
 
+  // 1. Preprocess image once for Gemini (shared preprocessing)
+  let preprocessedBuffer;
   try {
-    // 1. Start local forensics promise immediately
-    const localForensicsPromise = runLocalForensics(imageRecord.buffer, imageRecord.mimeType);
+    preprocessedBuffer = await sharp(imageRecord.buffer)
+      .rotate()
+      .resize({
+        width: 1536,
+        height: 1536,
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .jpeg({ quality: 85 })
+      .toBuffer();
+  } catch (preprocessErr) {
+    console.error('[Image Preprocess Error]:', preprocessErr);
+    return res.status(500).json({
+      success: false,
+      code: 'PREPROCESS_ERROR',
+      error: 'Failed to preprocess image.',
+      detail: process.env.NODE_ENV === 'production' ? undefined : preprocessErr.message
+    });
+  }
 
-    // 2. Prepare image for Gemini concurrently
-    const geminiPrepPromise = (async () => {
-      const preprocessedBuffer = await sharp(imageRecord.buffer)
-        .rotate()
-        .resize({
-          width: 1536,
-          height: 1536,
-          fit: 'inside',
-          withoutEnlargement: true
-        })
-        .jpeg({ quality: 85 })
-        .toBuffer();
+  // 2. Run local forensics and Gemini analysis in parallel
+  let localResults, geminiData;
 
-      const base64Image = preprocessedBuffer.toString('base64');
-      // OPT: Reuse module-level singleton instead of creating per-request
-      const ai = genaiInstance;
+  // Local forensics (sharp-based, no external API)
+  const localForensicsPromise = runLocalForensics(imageRecord.buffer, imageRecord.mimeType)
+    .catch(localErr => {
+      console.error('[Local Forensics Error]:', localErr);
+      return null; // Will handle below
+    });
 
-      const instructionText = `Inspect for AI-generation evidence and possible SynthID. Critically examine specific regions where modern diffusion models often fail: hands (extra/missing fingers, merged joints), teeth (asymmetry, bleeding edges), eyes (mismatched specular highlights/reflections), text/writing (gibberish, morphological drift), and background object coherence (floating or structurally impossible geometry). Also explicitly check for any visible AI-platform watermark, badge, or logo rendered into the image (e.g. a Gemini/Google AI sparkle mark, a Midjourney/DALL-E/Firefly signature, or similar). A visible platform watermark is strong, direct evidence of AI generation — if present, aiProbability must be at least 85, regardless of whether other physical-artifact categories look otherwise clean. List up to 5 reliable supporting regions; use normalized 0-100 x,y,width,height with x,y top-left. For each region, provide a 'confidence' score (0-100) indicating your certainty that the region contains synthetic artifacts. Use short labels. Return a single aiProbability from 0 to 100 representing how likely this image is AI-generated. Do not assume the image is AI-generated; most images are authentic unless clear physical impossibilities or distinct generative artifacts are present. Provide an honest, balanced aiProbability. Mode: ${mode}; sensitivity: ${sensitivity}.`;
+  // Gemini analysis (with timeout via AbortController)
+  const geminiPromise = (async () => {
+    const base64Image = preprocessedBuffer.toString('base64');
+    const ai = genaiInstance;
 
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), GEMINI_TIMEOUT_MS);
+
+    const instructionText = `Inspect for AI-generation evidence and possible SynthID. Critically examine specific regions where modern diffusion models often fail: hands (extra/missing fingers, merged joints), teeth (asymmetry, bleeding edges), eyes (mismatched specular highlights/reflections), text/writing (gibberish, morphological drift), and background object coherence (floating or structurally impossible geometry). Also explicitly check for any visible AI-platform watermark, badge, or logo rendered into the image (e.g. a Gemini/Google AI sparkle mark, a Midjourney/DALL-E/Firefly signature, or similar). A visible platform watermark is strong, direct evidence of AI generation — if present, aiProbability must be at least 85, regardless of whether other physical-artifact categories look otherwise clean. List up to 5 reliable supporting regions; use normalized 0-100 x,y,width,height with x,y top-left. For each region, provide a 'confidence' score (0-100) indicating your certainty that the region contains synthetic artifacts. Use short labels. Return a single aiProbability from 0 to 100 representing how likely this image is AI-generated. Do not assume the image is AI-generated; most images are authentic unless clear physical impossibilities or distinct generative artifacts are present. Provide an honest, balanced aiProbability. Mode: ${mode}; sensitivity: ${sensitivity}.`;
+
+    try {
       const response = await ai.models.generateContent({
         model: GEMINI_MODEL,
         contents: [
@@ -283,7 +380,9 @@ app.post('/api/v1/detect', async (req, res) => {
             required: ['aiProbability', 'visibleWatermarkDetected', 'regions', 'synthIdStatus', 'explanation', 'modelAttribution']
           }
         }
-      });
+      }, { signal: abortController.signal });
+
+      clearTimeout(timeoutId);
 
       let responseText = typeof response.text === 'function' ? response.text() : response.text;
       if (!responseText) {
@@ -291,64 +390,104 @@ app.post('/api/v1/detect', async (req, res) => {
       }
       responseText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
       return JSON.parse(responseText);
-    })();
+    } catch (err) {
+      clearTimeout(timeoutId);
+      throw err;
+    }
+  })();
 
-    // 3. Await both in parallel
-    const [localResults, geminiData] = await Promise.all([
-      localForensicsPromise,
-      geminiPrepPromise
-    ]);
-
-    const rawAiProb = typeof geminiData.aiProbability === 'number' ? geminiData.aiProbability : 50;
-    const clampedAiProb = Math.max(0, Math.min(100, rawAiProb));
-    const visibleWatermarkDetected = geminiData.visibleWatermarkDetected === true;
-    const geminiIsAi = clampedAiProb >= 50 || visibleWatermarkDetected;
-
-    // 4. Combine with ensemble logic
-    const ensemble = combineForensics(localResults, clampedAiProb / 100, geminiIsAi, visibleWatermarkDetected);
-    const isAi = ensemble.score >= 0.5;
-
-    return res.status(200).json({
-      success: true,
-      taskId: `scan_${crypto.randomUUID()}`,
-      verdict: isAi ? 'POSSIBLE AI-GENERATED IMAGE' : 'AUTHENTIC IMAGE',
-      isAi,
-      confidence: Number((clampedAiProb).toFixed(1)),
-      regions: geminiData.regions || [],
-      modelAttribution: geminiData.modelAttribution || 'Unknown / Not Determined',
-      synthIdStatus: ensemble.synthIdStatus,
-      explanation: {
-        gemini: geminiData.explanation || '',
-        forensics: ensemble.explanation || ''
-      },
-      metrics: ensemble.metrics,
-      forensicSignals: {
-        score: ensemble.score,
-        metadata: localResults.metadata,
-        ela: localResults.ela,
-        frequency: localResults.frequency,
-        noise: localResults.noise,
-        synthId: localResults.synthId,
-        prnu: localResults.prnu,
-        jpeg_ghost: localResults.jpeg_ghost,
-        cfa_demosaic: localResults.cfa_demosaic
-      },
-      heatmapUrl: `/media/${imageId}`,
-      scanMode: mode
-    });
-  } catch (err) {
-    return handleGeminiError(err, GEMINI_MODEL, res);
+  // Await both in parallel
+  try {
+    [localResults, geminiData] = await Promise.all([localForensicsPromise, geminiPromise]);
+  } catch (geminiErr) {
+    return handleGeminiError(geminiErr, GEMINI_MODEL, res);
   }
+
+  // Handle local forensics failure
+  if (!localResults) {
+    return res.status(500).json({
+      success: false,
+      code: 'LOCAL_FORENSICS_ERROR',
+      error: 'Image processing failed during local forensic analysis.'
+    });
+  }
+
+  // 3. Combine results
+  const rawAiProb = typeof geminiData.aiProbability === 'number' ? geminiData.aiProbability : 50;
+  const clampedAiProb = Math.max(0, Math.min(100, rawAiProb));
+  const visibleWatermarkDetected = geminiData.visibleWatermarkDetected === true;
+  const geminiIsAi = clampedAiProb >= 50 || visibleWatermarkDetected;
+
+  const ensemble = combineForensics(localResults, clampedAiProb / 100, geminiIsAi, visibleWatermarkDetected);
+  const isAi = ensemble.score >= 0.5;
+
+  return res.status(200).json({
+    success: true,
+    taskId: `scan_${crypto.randomUUID()}`,
+    verdict: isAi ? 'POSSIBLE AI-GENERATED IMAGE' : 'AUTHENTIC IMAGE',
+    isAi,
+    confidence: Number((clampedAiProb).toFixed(1)),
+    regions: geminiData.regions || [],
+    modelAttribution: geminiData.modelAttribution || 'Unknown / Not Determined',
+    synthIdStatus: ensemble.synthIdStatus,
+    explanation: {
+      gemini: geminiData.explanation || '',
+      forensics: ensemble.explanation || ''
+    },
+    metrics: ensemble.metrics,
+    forensicSignals: {
+      score: ensemble.score,
+      metadata: localResults.metadata,
+      ela: localResults.ela,
+      frequency: localResults.frequency,
+      noise: localResults.noise,
+      synthId: localResults.synthId,
+      prnu: localResults.prnu,
+      jpeg_ghost: localResults.jpeg_ghost,
+      cfa_demosaic: localResults.cfa_demosaic
+    },
+    heatmapUrl: `/media/${imageId}`,
+    scanMode: mode
+  });
 });
 
 // 5. Serve the frontend as static files
 const frontendDistPath = path.resolve(__dirname, '../frontend/dist');
 if (fs.existsSync(frontendDistPath)) {
   app.use('/', express.static(frontendDistPath));
-  app.get('/', (req, res) => {
+  // SPA catch-all: serve index.html for any non-API, non-media route
+  // This enables client-side routing (e.g., /analyze) to work correctly
+  app.get(/^(?!\/api\/)(?!\/media\/)(?!\/health).*/, (req, res) => {
     res.sendFile(path.join(frontendDistPath, 'index.html'));
   });
 }
+
+// Global error handler for Multer and other middleware errors (BUG-7)
+app.use((err, req, res, _next) => {
+  console.error('[Express Error Handler]:', err.message);
+
+  // Multer file-size or file-type errors
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(413).json({
+      success: false,
+      error: `File too large. Maximum allowed size is ${MAX_FILE_SIZE / (1024 * 1024)}MB.`
+    });
+  }
+
+  if (err.message && err.message.includes('Unsupported file type')) {
+    return res.status(415).json({
+      success: false,
+      error: err.message
+    });
+  }
+
+  return res.status(500).json({
+    success: false,
+    error: process.env.NODE_ENV === 'production'
+      ? 'Internal server error.'
+      : err.message || 'Internal server error.'
+  });
+});
 
 app.listen(PORT, () => {
   console.log(`[AI Forensics Backend] Server running on port ${PORT}`);

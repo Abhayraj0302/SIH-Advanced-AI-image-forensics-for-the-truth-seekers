@@ -11,6 +11,28 @@ import {
 import { scrollToSection } from '../utils/smoothScroll';
 
 // Static card data — defined outside component to avoid re-creation on every render (OPT-4)
+// Motion variants hoisted outside component since they contain no dynamic values (OPT-4f)
+const fadeUpVariant: Variants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.65, ease: 'easeOut' }
+  }
+};
+
+const staggerContainer: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.12,
+      delayChildren: 0.1
+    }
+  }
+};
+
+// Static card data — defined outside component to avoid re-creation on every render (OPT-4)
 const coreCards = [
   {
     id: 'ela',
@@ -67,26 +89,7 @@ export const Home: React.FC = () => {
     }
   }, [location]);
 
-  // Motion variants for scroll reveals below hero
-  const fadeUpVariant: Variants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.65, ease: 'easeOut' }
-    }
-  };
 
-  const staggerContainer: Variants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.12,
-        delayChildren: 0.1
-      }
-    }
-  };
 
   return (
     <div className="w-full bg-[#090A0E] min-h-screen text-gray-100 selection:bg-orange-600 selection:text-white">
@@ -101,6 +104,7 @@ export const Home: React.FC = () => {
           muted
           loop
           playsInline
+          preload="none"
           className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-85"
         >
           <source
