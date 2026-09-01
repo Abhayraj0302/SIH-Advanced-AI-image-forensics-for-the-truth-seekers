@@ -24,7 +24,6 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB
 const IMAGE_TTL_MS = 15 * 60 * 1000; // 15 minutes
 const MAX_IMAGE_STORE_SIZE = 500; // Maximum in-memory images (LRU cap)
-const GEMINI_TIMEOUT_MS = 30_000; // 30-second Gemini API timeout
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/tiff'];
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -315,13 +314,10 @@ app.post('/api/v1/detect', async (req, res) => {
       return null; // Will handle below
     });
 
-  // Gemini analysis (with timeout via AbortController)
+  // Gemini analysis
   const geminiPromise = (async () => {
     const base64Image = preprocessedBuffer.toString('base64');
     const ai = genaiInstance;
-
-    const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), GEMINI_TIMEOUT_MS);
 
     const instructionText = `Inspect for AI-generation evidence and possible SynthID. Critically examine specific regions where modern diffusion models often fail: hands (extra/missing fingers, merged joints), teeth (asymmetry, bleeding edges), eyes (mismatched specular highlights/reflections), text/writing (gibberish, morphological drift), and background object coherence (floating or structurally impossible geometry). Also explicitly check for any visible AI-platform watermark, badge, or logo rendered into the image (e.g. a Gemini/Google AI sparkle mark, a Midjourney/DALL-E/Firefly signature, or similar). A visible platform watermark is strong, direct evidence of AI generation — if present, aiProbability must be at least 85, regardless of whether other physical-artifact categories look otherwise clean. List up to 5 reliable supporting regions; use normalized 0-100 x,y,width,height with x,y top-left. For each region, provide a 'confidence' score (0-100) indicating your certainty that the region contains synthetic artifacts. Use short labels. Return a single aiProbability from 0 to 100 representing how likely this image is AI-generated. Do not assume the image is AI-generated; most images are authentic unless clear physical impossibilities or distinct generative artifacts are present. Provide an honest, balanced aiProbability. Mode: ${mode}; sensitivity: ${sensitivity}.`;
 
@@ -380,9 +376,7 @@ app.post('/api/v1/detect', async (req, res) => {
             required: ['aiProbability', 'visibleWatermarkDetected', 'regions', 'synthIdStatus', 'explanation', 'modelAttribution']
           }
         }
-      }, { signal: abortController.signal });
-
-      clearTimeout(timeoutId);
+      });
 
       let responseText = typeof response.text === 'function' ? response.text() : response.text;
       if (!responseText) {
@@ -391,7 +385,6 @@ app.post('/api/v1/detect', async (req, res) => {
       responseText = responseText.replace(/```json/gi, '').replace(/```/g, '').trim();
       return JSON.parse(responseText);
     } catch (err) {
-      clearTimeout(timeoutId);
       throw err;
     }
   })();

@@ -17,18 +17,26 @@ import { analyzeCfaDemosaic } from './cfa_demosaic.js';
  * @returns {{ rgb: { data: Buffer, info: object }, gray: { data: Buffer, info: object } }}
  */
 async function preDecodeImage(buffer) {
+  // Pre-resize image to max 1536 for all forensics to significantly speed up processing
+  const resizedBuffer = await sharp(buffer)
+    .resize({ width: 1536, height: 1536, fit: 'inside', withoutEnlargement: true })
+    .toBuffer();
+
   const [rgbResult, grayResult] = await Promise.all([
-    sharp(buffer)
+    sharp(resizedBuffer)
       .removeAlpha()
+      .toColorspace('srgb')
       .raw()
       .toBuffer({ resolveWithObject: true }),
-    sharp(buffer)
+    sharp(resizedBuffer)
+      .removeAlpha()
       .grayscale()
       .raw()
       .toBuffer({ resolveWithObject: true })
   ]);
 
   return {
+    resizedBuffer,
     rgb: { data: rgbResult.data, info: rgbResult.info },
     gray: { data: grayResult.data, info: grayResult.info }
   };
@@ -53,15 +61,16 @@ export async function runLocalForensics(buffer, mimeType) {
   // Pre-decode once: both RGB (for CFA/ELA) and grayscale (for freq/noise/prnu/jpeg_ghost)
   const preDecoded = await preDecodeImage(buffer);
 
+  // Note: metadata and c2pa must use the original buffer as resize strips metadata
   const [metadata, ela, frequency, noise, synthId, prnu, jpeg_ghost, cfa_demosaic] = await Promise.all([
     analyzeMetadata(buffer),
-    analyzeEla(buffer, preDecoded.rgb),
-    analyzeFrequency(buffer, preDecoded.gray),
-    analyzeNoise(buffer, preDecoded.gray),
+    analyzeEla(preDecoded.resizedBuffer, preDecoded.rgb),
+    analyzeFrequency(preDecoded.resizedBuffer, preDecoded.gray),
+    analyzeNoise(preDecoded.resizedBuffer, preDecoded.gray),
     scanSynthId(buffer, mimeType),
-    analyzePrnu(buffer, preDecoded.gray),
-    analyzeJpegGhost(buffer, preDecoded.gray),
-    analyzeCfaDemosaic(buffer, preDecoded.rgb)
+    analyzePrnu(preDecoded.resizedBuffer, preDecoded.gray),
+    analyzeJpegGhost(preDecoded.resizedBuffer, preDecoded.gray),
+    analyzeCfaDemosaic(preDecoded.resizedBuffer, preDecoded.rgb)
   ]);
 
   return {

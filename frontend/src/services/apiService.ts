@@ -54,17 +54,11 @@ export class ApiService {
     let lastError: ApiError | null = null;
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
-
       try {
         const response = await fetch(`${baseUrl}/api/v1/upload`, {
           method: 'POST',
-          body: formData,
-          signal: controller.signal
+          body: formData
         });
-
-        clearTimeout(timeoutId);
 
         if (!response.ok) {
           const errText = await response.text();
@@ -78,18 +72,11 @@ export class ApiService {
 
         return await response.json();
       } catch (err: unknown) {
-        clearTimeout(timeoutId);
-
         if (err instanceof ApiError) {
           throw err;
         }
 
         const message = err instanceof Error ? err.message : 'Failed to connect to the backend server for upload.';
-        const isAbort = err instanceof DOMException && err.name === 'AbortError';
-
-        if (isAbort) {
-          throw new ApiError('Upload request timed out. Please try again.');
-        }
 
         // Retry on network errors
         if (attempt < MAX_RETRIES) {
@@ -116,18 +103,12 @@ export class ApiService {
     let lastError: ApiError | null = null;
 
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
-
       try {
         const response = await fetch(`${baseUrl}/api/v1/detect`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ imageId, mode, sensitivity }),
-          signal: controller.signal
+          body: JSON.stringify({ imageId, mode, sensitivity })
         });
-
-        clearTimeout(timeoutId);
 
         if (!response.ok) {
           let errorBody: { error?: string; code?: string };
@@ -154,18 +135,11 @@ export class ApiService {
 
         return await response.json();
       } catch (err: unknown) {
-        clearTimeout(timeoutId);
-
         if (err instanceof ApiError) {
           throw err;
         }
 
         const message = err instanceof Error ? err.message : 'Failed to connect to the forensics engine for detection.';
-        const isAbort = err instanceof DOMException && err.name === 'AbortError';
-
-        if (isAbort) {
-          throw new ApiError('Detection request timed out. Please try again.');
-        }
 
         // Retry on network errors
         if (attempt < MAX_RETRIES) {
