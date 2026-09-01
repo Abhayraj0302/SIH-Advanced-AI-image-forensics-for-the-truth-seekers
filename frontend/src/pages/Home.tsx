@@ -32,7 +32,6 @@ const staggerContainer: Variants = {
   }
 };
 
-// Static card data — defined outside component to avoid re-creation on every render (OPT-4)
 const coreCards = [
   {
     id: 'ela',

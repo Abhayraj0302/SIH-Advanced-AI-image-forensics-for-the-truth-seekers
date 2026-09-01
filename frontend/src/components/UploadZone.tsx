@@ -2,7 +2,7 @@ import React, { DragEvent, ChangeEvent } from 'react';
 import { Upload } from 'lucide-react';
 
 interface UploadZoneProps {
-  fileInputRef: React.RefObject<HTMLInputElement | null>;
+  fileInputRef: React.RefObject<HTMLInputElement>;
   onFileSelect: (file: File) => void;
 }
 
