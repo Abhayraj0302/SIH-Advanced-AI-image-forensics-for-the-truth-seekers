@@ -8,7 +8,16 @@ import { scanSynthId } from './synthid.js';
 import { analyzePrnu } from './prnu.js';
 import { analyzeJpegGhost } from './jpeg_ghost.js';
 import { analyzeCfaDemosaic } from './cfa_demosaic.js';
+import Piscina from 'piscina';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const workerPool = new Piscina({
+  filename: path.resolve(__dirname, 'workers/pixelAnalysisWorker.js')
+});
 /**
  * Pre-decode an image buffer once into both RGB and grayscale representations
  * so all downstream forensic modules can skip their own redundant decode.
@@ -62,16 +71,26 @@ export async function runLocalForensics(buffer, mimeType) {
   const preDecoded = await preDecodeImage(buffer);
 
   // Note: metadata and c2pa must use the original buffer as resize strips metadata
+  console.time('Full Local Forensics Promise.all');
+  const workerArgs = {
+    resizedBuffer: preDecoded.resizedBuffer,
+    rgbData: preDecoded.rgb.data,
+    rgbInfo: preDecoded.rgb.info,
+    grayData: preDecoded.gray.data,
+    grayInfo: preDecoded.gray.info
+  };
+
   const [metadata, ela, frequency, noise, synthId, prnu, jpeg_ghost, cfa_demosaic] = await Promise.all([
-    analyzeMetadata(buffer),
-    analyzeEla(preDecoded.resizedBuffer, preDecoded.rgb),
-    analyzeFrequency(preDecoded.resizedBuffer, preDecoded.gray),
-    analyzeNoise(preDecoded.resizedBuffer, preDecoded.gray),
-    scanSynthId(buffer, mimeType),
-    analyzePrnu(preDecoded.resizedBuffer, preDecoded.gray),
-    analyzeJpegGhost(preDecoded.resizedBuffer, preDecoded.gray),
-    analyzeCfaDemosaic(preDecoded.resizedBuffer, preDecoded.rgb)
+    (async () => { console.time('metadata'); const r = await analyzeMetadata(buffer); console.timeEnd('metadata'); return r; })(),
+    (async () => { console.time('ela'); const r = await workerPool.run({ task: 'ela', ...workerArgs }); console.timeEnd('ela'); return r; })(),
+    (async () => { console.time('frequency'); const r = await workerPool.run({ task: 'frequency', ...workerArgs }); console.timeEnd('frequency'); return r; })(),
+    (async () => { console.time('noise'); const r = await workerPool.run({ task: 'noise', ...workerArgs }); console.timeEnd('noise'); return r; })(),
+    (async () => { console.time('synthId'); const r = await scanSynthId(buffer, mimeType); console.timeEnd('synthId'); return r; })(),
+    (async () => { console.time('prnu'); const r = await workerPool.run({ task: 'prnu', ...workerArgs }); console.timeEnd('prnu'); return r; })(),
+    (async () => { console.time('jpeg_ghost'); const r = await analyzeJpegGhost(preDecoded.resizedBuffer, preDecoded.gray); console.timeEnd('jpeg_ghost'); return r; })(),
+    (async () => { console.time('cfa_demosaic'); const r = await workerPool.run({ task: 'cfa_demosaic', ...workerArgs }); console.timeEnd('cfa_demosaic'); return r; })()
   ]);
+  console.timeEnd('Full Local Forensics Promise.all');
 
   return {
     metadata,

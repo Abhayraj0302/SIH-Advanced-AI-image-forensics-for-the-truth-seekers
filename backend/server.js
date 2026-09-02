@@ -317,11 +317,16 @@ app.post('/api/v1/detect', async (req, res) => {
   // Gemini analysis
   const geminiPromise = (async () => {
     const base64Image = preprocessedBuffer.toString('base64');
+    console.log('Preprocessed image size for Gemini:', (base64Image.length / 1024).toFixed(1), 'KB');
     const ai = genaiInstance;
 
-    const instructionText = `Inspect for AI-generation evidence and possible SynthID. Critically examine specific regions where modern diffusion models often fail: hands (extra/missing fingers, merged joints), teeth (asymmetry, bleeding edges), eyes (mismatched specular highlights/reflections), text/writing (gibberish, morphological drift), and background object coherence (floating or structurally impossible geometry). Also explicitly check for any visible AI-platform watermark, badge, or logo rendered into the image (e.g. a Gemini/Google AI sparkle mark, a Midjourney/DALL-E/Firefly signature, or similar). A visible platform watermark is strong, direct evidence of AI generation — if present, aiProbability must be at least 85, regardless of whether other physical-artifact categories look otherwise clean. List up to 5 reliable supporting regions; use normalized 0-100 x,y,width,height with x,y top-left. For each region, provide a 'confidence' score (0-100) indicating your certainty that the region contains synthetic artifacts. Use short labels. Return a single aiProbability from 0 to 100 representing how likely this image is AI-generated. Do not assume the image is AI-generated; most images are authentic unless clear physical impossibilities or distinct generative artifacts are present. Provide an honest, balanced aiProbability. Mode: ${mode}; sensitivity: ${sensitivity}.`;
+    const instructionText = `Critically inspect this image for evidence of AI generation (e.g., Midjourney, DALL-E, Stable Diffusion). Focus on common AI failure points: extra/missing fingers, merged joints, asymmetrical teeth, mismatched eye reflections, gibberish text, and structurally impossible background geometry.
+Crucially, look for any visible AI-platform watermarks or logos. If a visible watermark is present, 'visibleWatermarkDetected' must be true and 'aiProbability' must be at least 85.
+Do not assume the image is AI-generated; most are authentic unless obvious generative artifacts exist.
+Provide an honest 'aiProbability' (0-100). Provide a brief 'explanation' of your reasoning, and if AI-generated, guess the 'modelAttribution'.`;
 
     try {
+      console.time('Gemini API call');
       const response = await ai.models.generateContent({
         model: GEMINI_MODEL,
         contents: [
@@ -346,37 +351,15 @@ app.post('/api/v1/detect', async (req, res) => {
             type: Type.OBJECT,
             properties: {
               aiProbability: { type: Type.NUMBER, description: '0 to 100 likelihood of AI generation' },
-              visibleWatermarkDetected: { type: Type.BOOLEAN, description: 'true if an AI-platform watermark, badge, or logo is visibly rendered in the image' },
-              regions: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    x: { type: Type.NUMBER },
-                    y: { type: Type.NUMBER },
-                    width: { type: Type.NUMBER },
-                    height: { type: Type.NUMBER },
-                    label: { type: Type.STRING },
-                    confidence: { type: Type.NUMBER, description: '0 to 100 confidence that this region is synthetic' }
-                  },
-                  required: ['x', 'y', 'width', 'height', 'label', 'confidence']
-                }
-              },
-              synthIdStatus: {
-                type: Type.STRING,
-                enum: ['PRESENT', 'NOT_DETECTED', 'INCONCLUSIVE']
-              },
-              explanation: { type: Type.STRING },
-              modelAttribution: { type: Type.STRING },
-              spectralScore: { type: Type.STRING },
-              noiseConsistency: { type: Type.STRING },
-              metadataStatus: { type: Type.STRING },
-              facialGlint: { type: Type.STRING }
+              visibleWatermarkDetected: { type: Type.BOOLEAN, description: 'true if an AI watermark or logo is visibly rendered' },
+              explanation: { type: Type.STRING, description: 'Brief explanation of your verdict' },
+              modelAttribution: { type: Type.STRING, description: 'Predicted AI model if applicable, else unknown' }
             },
-            required: ['aiProbability', 'visibleWatermarkDetected', 'regions', 'synthIdStatus', 'explanation', 'modelAttribution']
+            required: ['aiProbability', 'visibleWatermarkDetected', 'explanation', 'modelAttribution']
           }
         }
       });
+      console.timeEnd('Gemini API call');
 
       let responseText = typeof response.text === 'function' ? response.text() : response.text;
       if (!responseText) {
