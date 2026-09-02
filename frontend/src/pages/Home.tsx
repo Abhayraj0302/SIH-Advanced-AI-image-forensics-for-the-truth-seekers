@@ -119,38 +119,7 @@ export const Home: React.FC = () => {
         {/* ========================================================================= */}
         {/* TOP NAVBAR: LEFT PILL FLIES FROM LEFT, RIGHT PILL FLIES FROM RIGHT        */}
         {/* ========================================================================= */}
-        <header className="relative z-10 w-full flex items-center justify-between pointer-events-auto">
-          {/* Left Pill (Logo) - Flies in from the LEFT */}
-          <motion.div
-            initial={{ opacity: 0, x: -80 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.9, delay: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <Link
-              to="/"
-              className="w-11 h-11 rounded-full bg-[#151824]/90 backdrop-blur-md border border-white/15 flex items-center justify-center shadow-xl hover:scale-105 transition-all duration-200 group cursor-pointer"
-              title="AI Image Forensics"
-            >
-              <svg
-                className="w-5 h-5 text-orange-400 group-hover:text-orange-300 transition-colors"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                {/* Tech / Eye SVG */}
-                <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                <circle cx="12" cy="12" r="3" />
-                <circle cx="12" cy="12" r="1" fill="currentColor" />
-                <path d="M12 3v2" />
-                <path d="M12 19v2" />
-                <path d="M3 12h2" />
-                <path d="M19 12h2" />
-              </svg>
-            </Link>
-          </motion.div>
+        <header className="relative z-10 w-full flex items-center justify-end pointer-events-auto">
 
           {/* Right Pill (Links with 1400px/s constant velocity) - Flies in from the RIGHT */}
           <motion.nav
