@@ -11,8 +11,8 @@ async function testBackend() {
   // Create a 256x256 test JPEG image
   const testBuffer = await sharp({
     create: {
-      width: 256,
-      height: 256,
+      width: 1536,
+      height: 1536,
       channels: 3,
       background: { r: 120, g: 140, b: 200 }
     }
