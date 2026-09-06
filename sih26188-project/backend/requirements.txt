@@ -1,0 +1,17 @@
+faker
+indic-transliteration
+rapidfuzz
+fastapi
+uvicorn[standard]
+networkx
+pillow
+pytesseract
+insightface
+onnxruntime
+opencv-python
+numpy
+torch
+torchvision
+transformers
+python-multipart
+scikit-learn
