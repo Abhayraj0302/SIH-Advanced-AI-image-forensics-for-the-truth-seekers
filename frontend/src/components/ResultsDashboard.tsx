@@ -23,7 +23,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
   onReset,
   onImageEnlarge
 }) => {
-  // Memoize module list to avoid child re-renders when parent state changes
+
   const moduleList = useMemo(() => results.modules, [results.modules]);
 
   return (
@@ -77,11 +77,10 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <span
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
-                  results.overallProbability > 50
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${results.overallProbability > 50
                     ? 'bg-red-500/15 text-red-400 border-red-500/30'
                     : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                }`}
+                  }`}
               >
                 {results.overallProbability > 50 ? (
                   <ShieldAlert className="w-3.5 h-3.5" />
@@ -116,9 +115,8 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               Probability of AI Generation
             </span>
             <span
-              className={`text-2xl font-mono font-extrabold ${
-                results.overallProbability > 50 ? 'text-red-400' : 'text-emerald-400'
-              }`}
+              className={`text-2xl font-mono font-extrabold ${results.overallProbability > 50 ? 'text-red-400' : 'text-emerald-400'
+                }`}
             >
               <AnimatedCounter value={results.overallProbability} duration={1200} suffix="%" />
             </span>
@@ -127,13 +125,12 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           {/* Progress Bar Container with smooth width animation */}
           <div className="w-full bg-[#0D0F16] h-4 rounded-full overflow-hidden p-0.5 border border-white/10">
             <div
-              className={`h-full rounded-full ${
-                results.overallProbability > 65
+              className={`h-full rounded-full ${results.overallProbability > 65
                   ? 'bg-gradient-to-r from-amber-500 to-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]'
                   : results.overallProbability > 35
-                  ? 'bg-gradient-to-r from-yellow-400 to-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)]'
-                  : 'bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.5)]'
-              }`}
+                    ? 'bg-gradient-to-r from-yellow-400 to-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)]'
+                    : 'bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-[0_0_15px_rgba(16,185,129,0.5)]'
+                }`}
               style={{
                 width: `${barsLoaded ? Math.max(results.overallProbability, 4) : 0}%`,
                 transition: 'width 1.2s cubic-bezier(0.16, 1, 0.3, 1)'
@@ -187,27 +184,16 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
                 <div className="flex items-center gap-2.5">
                   <span
-                    className={`w-2.5 h-2.5 rounded-full ${
-                      mod.score > 50 ? 'bg-red-400' : 'bg-emerald-400'
-                    }`}
+                    className={`w-2.5 h-2.5 rounded-full ${mod.score > 50 ? 'bg-red-400' : 'bg-emerald-400'
+                      }`}
                   />
                   <h4 className="text-sm font-bold text-white">{mod.name}</h4>
-                  <span
-                    className={`text-[11px] font-mono font-semibold px-2 py-0.5 rounded-full border ${
-                      mod.score > 50
-                        ? 'bg-red-500/15 text-red-400 border-red-500/30'
-                        : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
-                    }`}
-                  >
-                    {mod.status}
-                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-gray-400">Anomaly Risk:</span>
                   <span
-                    className={`text-xs font-mono font-bold ${
-                      mod.score > 50 ? 'text-red-400' : 'text-emerald-400'
-                    }`}
+                    className={`text-xs font-mono font-bold ${mod.score > 50 ? 'text-red-400' : 'text-emerald-400'
+                      }`}
                   >
                     <AnimatedCounter value={mod.score} duration={1100} suffix="%" />
                   </span>
@@ -219,9 +205,8 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               {/* Small metric progress bar */}
               <div className="w-full bg-[#181B26] h-1.5 rounded-full overflow-hidden">
                 <div
-                  className={`h-full rounded-full ${
-                    mod.score > 50 ? 'bg-red-500' : 'bg-emerald-500'
-                  }`}
+                  className={`h-full rounded-full ${mod.score > 50 ? 'bg-red-500' : 'bg-emerald-500'
+                    }`}
                   style={{
                     width: `${barsLoaded ? Math.max(mod.score, 2) : 0}%`,
                     transition: 'width 1.1s cubic-bezier(0.16, 1, 0.3, 1)'
