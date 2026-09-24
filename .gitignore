@@ -29,3 +29,11 @@ coverage/
 
 # TypeScript
 *.tsbuildinfo
+
+# Python
+.venv
+venv
+env
+__pycache__/
+*.py[cod]
+

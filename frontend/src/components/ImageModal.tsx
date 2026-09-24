@@ -19,8 +19,8 @@ export const ImageModal: React.FC<ImageModalProps> = ({ previewUrl, onClose }) =
           loading="lazy"
         />
         {/* Enlarged Modal Scan Laser Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-orange-500/10 via-transparent to-orange-500/15 pointer-events-none rounded-xl" />
-        <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-orange-400 to-transparent shadow-[0_0_15px_#FF7700] animate-scan-vertical pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#00ffc6]/10 via-transparent to-[#00ffc6]/15 pointer-events-none rounded-xl" />
+        <div className="absolute inset-x-0 h-1 bg-gradient-to-r from-transparent via-[#00ffc6] to-transparent shadow-[0_0_15px_#00ffc6] animate-scan-vertical pointer-events-none" />
       </div>
     </div>
   );

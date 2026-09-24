@@ -12,14 +12,19 @@
     "analyze:bundle": "source-map-explorer dist/assets/*.js"
   },
   "dependencies": {
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
+    "@types/three": "^0.186.0",
     "clsx": "^2.1.1",
     "cytoscape": "^3.34.2",
     "framer-motion": "^13.1.1",
     "lucide-react": "^0.475.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-icons": "^5.7.0",
     "react-router-dom": "^6.28.0",
     "tailwind-merge": "^3.6.0",
+    "three": "^0.186.0",
     "zustand": "^5.0.15"
   },
   "devDependencies": {

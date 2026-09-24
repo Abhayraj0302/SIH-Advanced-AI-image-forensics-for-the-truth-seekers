@@ -542,7 +542,7 @@ export const FraudGraph: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#090A0E] min-h-screen flex flex-col text-gray-100 selection:bg-orange-600 selection:text-white">
+    <div className="bg-[#090A0E] min-h-screen flex flex-col text-gray-100 selection:bg-[#00ffc6] selection:text-black">
       {/* Top Header & Metrics Bar */}
       <header className="border-b border-white/10 bg-[#0F121C]/90 backdrop-blur-md sticky top-0 z-20 px-4 sm:px-6 py-3.5 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
@@ -659,7 +659,7 @@ export const FraudGraph: React.FC = () => {
             onClick={() => applyFilter('suspicious')}
             className={`text-xs px-3 py-1.5 rounded-full font-mono transition-colors cursor-pointer border ${
               activeFilter === 'suspicious'
-                ? 'bg-orange-500/30 text-orange-300 border-orange-500/60 font-bold'
+                ? 'bg-[#00ffc6]/20 text-[#00ffc6] border-[#00ffc6]/60 font-bold'
                 : 'bg-white/5 text-gray-400 border-white/10 hover:text-white'
             }`}
           >
@@ -692,7 +692,7 @@ export const FraudGraph: React.FC = () => {
                 if (!e.target.value.trim()) setSearchResults([]);
               }}
               placeholder="Search person or ID (e.g. Rahul, RA001)..."
-              className="bg-[#141824] border border-white/10 text-xs text-white pl-8 pr-3 py-1.5 rounded-xl w-60 focus:outline-none focus:border-orange-500"
+              className="bg-[#141824] border border-white/10 text-xs text-white pl-8 pr-3 py-1.5 rounded-xl w-60 focus:outline-none focus:border-[#00ffc6]"
             />
             <Search className="w-3.5 h-3.5 text-gray-400 absolute left-2.5 top-2.5 pointer-events-none" />
 
@@ -731,7 +731,7 @@ export const FraudGraph: React.FC = () => {
         {/* Loading Spinner */}
         {isLoading && (
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex flex-col items-center justify-center z-10">
-            <div className="w-10 h-10 border-2 border-orange-500 border-t-transparent rounded-full animate-spin mb-3" />
+            <div className="w-10 h-10 border-2 border-[#00ffc6] border-t-transparent rounded-full animate-spin mb-3" />
             <span className="text-xs font-mono text-gray-300">Constructing Identity Network Graph...</span>
           </div>
         )}
@@ -789,7 +789,7 @@ export const FraudGraph: React.FC = () => {
           <aside className="absolute top-0 right-0 h-full w-full sm:w-96 bg-[#111420]/95 backdrop-blur-xl border-l border-white/10 shadow-2xl z-20 flex flex-col animate-slide-left overflow-y-auto">
             <div className="p-5 border-b border-white/10 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-orange-500/10 border border-orange-500/20 text-orange-400">
+                <div className="p-2 rounded-xl bg-[#00ffc6]/10 border border-[#00ffc6]/20 text-[#00ffc6]">
                   <User className="w-5 h-5" />
                 </div>
                 <div>

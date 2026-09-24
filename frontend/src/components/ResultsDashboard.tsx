@@ -29,13 +29,9 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
   onReset,
   onImageEnlarge
 }) => {
-<<<<<<< HEAD
-
-=======
   const [showTechnicalDetails, setShowTechnicalDetails] = useState(false);
 
   // Memoize module list to avoid child re-renders when parent state changes
->>>>>>> their/main
   const moduleList = useMemo(() => results.modules, [results.modules]);
   const isAi = results.overallProbability > 50;
 
@@ -48,7 +44,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
         {/* Full-width image display */}
         {previewUrl && (
           <div
-            className="relative w-full max-h-[380px] rounded-2xl overflow-hidden border-2 border-orange-500/40 mb-6 bg-black cursor-zoom-in group select-none"
+            className="relative w-full max-h-[380px] rounded-2xl overflow-hidden border-2 border-[#00ffc6]/40 mb-6 bg-black cursor-zoom-in group select-none"
             onClick={onImageEnlarge}
             title="Click to view full image"
           >
@@ -60,23 +56,23 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
             />
 
             {/* Holographic tint overlay */}
-            <div className="absolute inset-0 bg-gradient-to-b from-orange-500/5 via-transparent to-orange-500/10 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-b from-[#00ffc6]/5 via-transparent to-[#00ffc6]/10 pointer-events-none" />
 
             {/* Scanning laser line */}
-            <div className="absolute inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-orange-400 to-transparent shadow-[0_0_12px_#FF7700] animate-scan-vertical pointer-events-none" />
+            <div className="absolute inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-[#00ffc6] to-transparent shadow-[0_0_12px_#00ffc6] animate-scan-vertical pointer-events-none" />
 
             {/* Blueprint grid */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#FF770010_1px,transparent_1px),linear-gradient(to_bottom,#FF770010_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-40" />
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#00ffc610_1px,transparent_1px),linear-gradient(to_bottom,#00ffc610_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none opacity-40" />
 
             {/* Corner brackets */}
-            <div className="absolute top-2.5 left-2.5 w-4 h-4 border-t-2 border-l-2 border-orange-400/70 pointer-events-none" />
-            <div className="absolute top-2.5 right-2.5 w-4 h-4 border-t-2 border-r-2 border-orange-400/70 pointer-events-none" />
-            <div className="absolute bottom-2.5 left-2.5 w-4 h-4 border-b-2 border-l-2 border-orange-400/70 pointer-events-none" />
-            <div className="absolute bottom-2.5 right-2.5 w-4 h-4 border-b-2 border-r-2 border-orange-400/70 pointer-events-none" />
+            <div className="absolute top-2.5 left-2.5 w-4 h-4 border-t-2 border-l-2 border-[#00ffc6]/70 pointer-events-none" />
+            <div className="absolute top-2.5 right-2.5 w-4 h-4 border-t-2 border-r-2 border-[#00ffc6]/70 pointer-events-none" />
+            <div className="absolute bottom-2.5 left-2.5 w-4 h-4 border-b-2 border-l-2 border-[#00ffc6]/70 pointer-events-none" />
+            <div className="absolute bottom-2.5 right-2.5 w-4 h-4 border-b-2 border-r-2 border-[#00ffc6]/70 pointer-events-none" />
 
             {/* Status chip */}
             <div className="absolute bottom-2.5 inset-x-0 flex justify-center pointer-events-none">
-              <span className="text-[9px] font-mono font-bold text-orange-300 bg-black/80 backdrop-blur-sm px-2 py-0.5 rounded-md border border-orange-500/30 tracking-wider uppercase">
+              <span className="text-[9px] font-mono font-bold text-[#00e5b2] bg-black/80 backdrop-blur-sm px-2 py-0.5 rounded-md border border-[#00ffc6]/30 tracking-wider uppercase">
                 Scan Complete — Click to Enlarge
               </span>
             </div>
@@ -92,12 +88,8 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
 
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <span
-<<<<<<< HEAD
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${results.overallProbability > 50
-=======
                 className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${
                   isAi
->>>>>>> their/main
                     ? 'bg-red-500/15 text-red-400 border-red-500/30'
                     : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
                   }`}
@@ -157,18 +149,13 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
         <div className="pt-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-mono font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-2">
-              <Scan className="w-3.5 h-3.5 text-orange-400" />
+              <Scan className="w-3.5 h-3.5 text-[#00ffc6]" />
               Probability of AI Generation
             </span>
             <span
-<<<<<<< HEAD
-              className={`text-2xl font-mono font-extrabold ${results.overallProbability > 50 ? 'text-red-400' : 'text-emerald-400'
-                }`}
-=======
               className={`text-2xl font-mono font-extrabold ${
                 isAi ? 'text-red-400' : 'text-emerald-400'
               }`}
->>>>>>> their/main
             >
               <AnimatedCounter value={results.overallProbability} duration={1200} suffix="%" />
             </span>
@@ -204,7 +191,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
       {(results.unifiedVerdict?.executiveSummary || results.explanation) && (
         <div className="bg-[#11141E] rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl">
           <div className="flex items-center gap-2 mb-4 text-white font-bold text-base sm:text-lg">
-            <FileCheck2 className="w-4 h-4 text-orange-400" />
+            <FileCheck2 className="w-4 h-4 text-[#00ffc6]" />
             <span>Executive Forensic Assessment</span>
           </div>
 
@@ -225,7 +212,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     key={idx}
                     className="inline-flex items-center gap-1.5 text-xs text-gray-300 bg-[#0D0F16] border border-white/10 px-3 py-1.5 rounded-xl"
                   >
-                    <span className="text-orange-400 font-bold">•</span>
+                    <span className="text-[#00ffc6] font-bold">•</span>
                     {anom}
                   </span>
                 ))}
@@ -244,7 +231,7 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           className="w-full flex items-center justify-between p-6 sm:p-7 hover:bg-white/[0.02] transition-colors cursor-pointer text-left"
         >
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-white/5 text-orange-400">
+            <div className="p-2 rounded-xl bg-white/5 text-[#00ffc6]">
               <Cpu className="w-5 h-5" />
             </div>
             <div>
@@ -265,37 +252,13 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
           </div>
         </button>
 
-<<<<<<< HEAD
-        <div className="space-y-4">
-          {moduleList.map((mod) => (
-            <div
-              key={mod.id}
-              className="p-4 sm:p-5 rounded-2xl bg-[#0D0F16] border border-white/5 hover:border-white/15 transition-colors"
-            >
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-                <div className="flex items-center gap-2.5">
-                  <span
-                    className={`w-2.5 h-2.5 rounded-full ${mod.score > 50 ? 'bg-red-400' : 'bg-emerald-400'
-                      }`}
-                  />
-                  <h4 className="text-sm font-bold text-white">{mod.name}</h4>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-gray-400">Anomaly Risk:</span>
-                  <span
-                    className={`text-xs font-mono font-bold ${mod.score > 50 ? 'text-red-400' : 'text-emerald-400'
-                      }`}
-                  >
-                    <AnimatedCounter value={mod.score} duration={1100} suffix="%" />
-                  </span>
-=======
         {showTechnicalDetails && (
           <div className="px-6 sm:px-8 pb-6 sm:pb-8 pt-2 space-y-6 border-t border-white/5">
             {/* Layer B Telemetry Grid */}
             {results.layerB && (
               <div>
                 <h4 className="text-xs font-mono font-semibold uppercase text-gray-400 mb-3 flex items-center gap-1.5">
-                  <Layers className="w-3.5 h-3.5 text-orange-400" />
+                  <Layers className="w-3.5 h-3.5 text-[#00ffc6]" />
                   Layer B: Deep Neural & Signal Telemetry
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -351,7 +314,6 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                       Risk: {results.layerB.documentForensics?.riskScore ?? 0}/100
                     </p>
                   </div>
->>>>>>> their/main
                 </div>
               </div>
             )}
@@ -368,22 +330,10 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
               </div>
             )}
 
-<<<<<<< HEAD
-              {/* Small metric progress bar */}
-              <div className="w-full bg-[#181B26] h-1.5 rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full ${mod.score > 50 ? 'bg-red-500' : 'bg-emerald-500'
-                    }`}
-                  style={{
-                    width: `${barsLoaded ? Math.max(mod.score, 2) : 0}%`,
-                    transition: 'width 1.1s cubic-bezier(0.16, 1, 0.3, 1)'
-                  }}
-                />
-=======
             {/* Forensic Module Diagnostic Passes */}
             <div>
               <h4 className="text-xs font-mono font-semibold uppercase text-gray-400 mb-3 flex items-center gap-1.5">
-                <Scan className="w-3.5 h-3.5 text-orange-400" />
+                <Scan className="w-3.5 h-3.5 text-[#00ffc6]" />
                 Algorithmic Anomaly Detectors ({moduleList.length} Passes)
               </h4>
               <div className="space-y-2.5">
@@ -426,7 +376,6 @@ export const ResultsDashboard: React.FC<ResultsDashboardProps> = ({
                     </div>
                   </div>
                 ))}
->>>>>>> their/main
               </div>
             </div>
           </div>

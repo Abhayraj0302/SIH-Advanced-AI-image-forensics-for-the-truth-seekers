@@ -36,7 +36,7 @@
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3B82F6;
+  background: #00ffc6;
 }
 
 /* Infinite Marquee Animation - 42s crisp smooth scroll */
@@ -155,13 +155,13 @@
 /* Rotating ring glow */
 @keyframes ringGlow {
   0% {
-    box-shadow: 0 0 8px rgba(249, 115, 22, 0.3), 0 0 20px rgba(249, 115, 22, 0.1);
+    box-shadow: 0 0 8px rgba(0, 255, 198, 0.3), 0 0 20px rgba(0, 255, 198, 0.1);
   }
   50% {
-    box-shadow: 0 0 16px rgba(249, 115, 22, 0.6), 0 0 40px rgba(249, 115, 22, 0.2);
+    box-shadow: 0 0 16px rgba(0, 255, 198, 0.6), 0 0 40px rgba(0, 255, 198, 0.2);
   }
   100% {
-    box-shadow: 0 0 8px rgba(249, 115, 22, 0.3), 0 0 20px rgba(249, 115, 22, 0.1);
+    box-shadow: 0 0 8px rgba(0, 255, 198, 0.3), 0 0 20px rgba(0, 255, 198, 0.1);
   }
 }
 

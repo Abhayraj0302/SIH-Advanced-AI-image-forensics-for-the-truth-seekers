@@ -12,6 +12,7 @@ import { UploadZone } from '../components/UploadZone';
 import { ScannerOverlay } from '../components/ScannerOverlay';
 import { ResultsDashboard } from '../components/ResultsDashboard';
 import { ImageModal } from '../components/ImageModal';
+import PortalFieldCollection from '../components/ui/portal-field';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/tiff'];
 
@@ -195,12 +196,26 @@ export const Analyzer: React.FC = () => {
   }, [previewUrl]);
 
   return (
-    <div className="bg-[#090A0E] min-h-screen flex flex-col items-center pt-10 sm:pt-16 pb-20 px-4 sm:px-6 md:px-8 text-gray-100 selection:bg-orange-600 selection:text-white">
+    <div className="relative bg-[#090A0E] min-h-screen flex flex-col items-center pt-10 sm:pt-16 pb-20 px-4 sm:px-6 md:px-8 text-gray-100 selection:bg-[#00ffc6] selection:text-black overflow-x-hidden">
+      {/* Background Portal Field Animation */}
+      <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <PortalFieldCollection
+          mode="dark"
+          speed={0.9}
+          size={1.1}
+          length={1.0}
+          opacity={0.75}
+          className="w-full h-full"
+        />
+        {/* Ambient overlay to ensure contrast and readability of cards and upload zone */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#090A0E]/75 via-[#090A0E]/45 to-[#090A0E]/90 pointer-events-none" />
+      </div>
+
       {/* Top Navigation Bar */}
-      <div className="w-full max-w-5xl flex items-center justify-between mb-8">
+      <div className="relative z-10 w-full max-w-5xl flex items-center justify-between mb-8">
         <Link
           to="/"
-          className="inline-flex items-center gap-2 text-xs font-semibold text-gray-300 hover:text-white bg-[#151824] border border-white/10 px-4 py-2 rounded-full shadow-xl hover:border-white/20 transition-all duration-200"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-gray-300 hover:text-white bg-[#151824]/90 backdrop-blur-md border border-white/10 px-4 py-2 rounded-full shadow-xl hover:border-white/20 transition-all duration-200"
         >
           <ArrowLeft className="w-3.5 h-3.5" />
           <span>Back to Overview</span>
@@ -209,7 +224,7 @@ export const Analyzer: React.FC = () => {
         <div className="flex items-center gap-3">
           <Link
             to="/graph"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-purple-300 hover:text-white bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/30 px-3.5 py-1.5 rounded-full shadow-lg transition-all"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#00ffc6] hover:text-white bg-[#00ffc6]/10 hover:bg-[#00ffc6]/20 border border-[#00ffc6]/30 px-3.5 py-1.5 rounded-full shadow-lg transition-all"
           >
             <Network className="w-3.5 h-3.5" />
             <span>Fraud Relationship Graph</span>
@@ -220,7 +235,7 @@ export const Analyzer: React.FC = () => {
       </div>
 
       {/* Main Dashboard Container */}
-      <main className="w-full max-w-5xl">
+      <main className="relative z-10 w-full max-w-5xl">
         {/* Header Title */}
         <div className="text-center mb-8">
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
