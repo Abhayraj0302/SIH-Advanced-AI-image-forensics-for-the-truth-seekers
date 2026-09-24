@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { PiShoppingBagBold } from "react-icons/pi";
+
 
 class HeartCurve extends THREE.Curve<THREE.Vector3> {
   constructor() {
@@ -701,16 +701,13 @@ export interface NavItem {
   label: string;
   href: string;
   target?: string;
+  accent?: boolean;
 }
 
 export interface RobotHeroProps {
   backgroundText?: string;
   navItemsLeft?: NavItem[];
-  contactText?: string;
-  contactHref?: string;
-  contactTarget?: string;
-  ctaText?: string;
-  onCtaClick?: () => void;
+  navItemsRight?: NavItem[];
   color?: string;
   scale?: number;
   pantallaColor?: string;
@@ -721,18 +718,10 @@ export interface RobotHeroProps {
 
 function AntennaNavbar({
   leftItems,
-  contactText,
-  contactHref,
-  contactTarget,
-  ctaText,
-  onCtaClick,
+  rightItems = [],
 }: {
   leftItems: NavItem[];
-  contactText: string;
-  contactHref: string;
-  contactTarget?: string;
-  ctaText: string;
-  onCtaClick?: () => void;
+  rightItems?: NavItem[];
 }) {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
 
@@ -754,7 +743,11 @@ function AntennaNavbar({
                 }
                 onMouseEnter={() => setHoveredIndex(idx)}
                 onMouseLeave={() => setHoveredIndex(null)}
-                className="relative px-7 py-2.5 rounded-full bg-white text-black hover:bg-zinc-200 text-sm font-bold transition-all overflow-hidden shadow-[0_4px_14px_rgba(255,255,255,0.15)]"
+                className={`relative px-7 py-2.5 rounded-full text-sm font-bold transition-all overflow-hidden ${
+                  item.accent
+                    ? "bg-[#00ffc6] text-black hover:bg-[#00e5b2] shadow-[0_0_18px_rgba(0,255,198,0.45)]"
+                    : "bg-white text-black hover:bg-zinc-200 shadow-[0_4px_14px_rgba(255,255,255,0.15)]"
+                }`}
               >
                 {item.label}
                 {hoveredIndex === idx && (
@@ -782,25 +775,27 @@ function AntennaNavbar({
             </div>
           </div>
 
-          <div className="flex flex-wrap justify-center lg:justify-end items-center gap-2 sm:gap-3 w-full lg:w-auto mt-4 lg:mt-0 z-20">
-            <a
-              href={contactHref}
-              target={contactTarget}
-              rel={
-                contactTarget === "_blank" ? "noopener noreferrer" : undefined
-              }
-              className="px-5 sm:px-7 py-2.5 rounded-full bg-white text-black hover:bg-zinc-200 text-xs sm:text-sm font-bold transition-all shadow-[0_4px_14px_rgba(255,255,255,0.15)]"
-            >
-              {contactText}
-            </a>
-            <button
-              onClick={onCtaClick}
-              className="px-5 sm:px-7 py-2.5 rounded-full bg-[#00ffc6] text-black text-xs sm:text-sm font-black hover:bg-[#00e5b2] transition-colors flex items-center gap-2 shadow-[0_0_20px_rgba(0,255,198,0.4)]"
-            >
-              {ctaText}
-              <PiShoppingBagBold size={18} />
-            </button>
-          </div>
+          {/* Right items */}
+          {rightItems.length > 0 && (
+            <div className="flex flex-wrap justify-center lg:justify-end items-center gap-2 sm:gap-3 w-full lg:w-auto mt-4 lg:mt-0 z-20">
+              {rightItems.map((item, idx) => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  target={item.target}
+                  rel={item.target === "_blank" ? "noopener noreferrer" : undefined}
+                  className={`relative px-7 py-2.5 rounded-full text-sm font-bold transition-all overflow-hidden ${
+                    item.accent
+                      ? "bg-[#00ffc6] text-black hover:bg-[#00e5b2] shadow-[0_0_18px_rgba(0,255,198,0.45)]"
+                      : "bg-white text-black hover:bg-zinc-200 shadow-[0_4px_14px_rgba(255,255,255,0.15)]"
+                  }`}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </div>
+          )}
+
         </div>
 
         <motion.div
@@ -820,11 +815,7 @@ export function RobotHero({
     { label: "Specs", href: "#" },
     { label: "Reviews", href: "#" },
   ],
-  contactText = "Contact",
-  contactHref = "#",
-  contactTarget,
-  ctaText = "Buy Now",
-  onCtaClick,
+  navItemsRight = [],
   color = "#c4c4c4",
   scale = 1,
   pantallaColor = "#00ffc6",
@@ -941,11 +932,7 @@ export function RobotHero({
       <div className="absolute inset-0 z-20 pointer-events-none flex flex-col">
         <AntennaNavbar
           leftItems={navItemsLeft}
-          contactText={contactText}
-          contactHref={contactHref}
-          contactTarget={contactTarget}
-          ctaText={ctaText}
-          onCtaClick={onCtaClick}
+          rightItems={navItemsRight}
         />
 
         <div className="relative w-full max-w-[1400px] mx-auto px-8 flex-1 flex flex-col">

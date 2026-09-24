@@ -1,5 +1,5 @@
-import React, { useEffect, useCallback } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, Variants } from 'framer-motion';
 import {
   Layers,
@@ -8,8 +8,9 @@ import {
   Fingerprint,
   Scan,
   Sparkles,
-  ArrowRight,
-  CheckCircle2
+  CheckCircle2,
+  Upload,
+  ArrowRight
 } from 'lucide-react';
 import { scrollToSection } from '../utils/smoothScroll';
 import { RobotHero } from '@/components/ui/robot-hero';
@@ -117,10 +118,7 @@ export const Home: React.FC = () => {
     scrollToSection(id);
   };
 
-  // Callback for the RobotHero "Upload Image" CTA button — navigates to /analyze
-  const handleUploadClick = useCallback(() => {
-    navigate('/analyze');
-  }, [navigate]);
+  const handleUploadClick = () => navigate('/analyze');
 
   useEffect(() => {
     if (location.hash) {
@@ -142,12 +140,10 @@ export const Home: React.FC = () => {
           { label: "Fraud Graph", href: "/graph" },
           { label: "Technology", href: "#technology" },
           { label: "Documentation", href: "#documentation" },
-          { label: "API", href: "#api" },
         ]}
-        contactText="Contact"
-        contactHref="#api"
-        ctaText="Upload Image"
-        onCtaClick={handleUploadClick}
+        navItemsRight={[
+          { label: "Upload Image", href: "#upload", accent: true },
+        ]}
         color="#c4c4c4"
         scale={1}
         pantallaColor="#00ffc6"
@@ -313,15 +309,7 @@ export const Home: React.FC = () => {
                 </motion.div>
               </div>
 
-              <motion.div variants={fadeUpVariant} className="pt-4">
-                <Link
-                  to="/analyze"
-                  className="inline-flex items-center gap-2 text-sm font-semibold text-black border border-[#00ffc6] bg-[#00ffc6] hover:bg-[#00ffc6]/90 hover:shadow-[0_0_20px_rgba(0,255,198,0.4),0_0_35px_rgba(0,255,198,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 group px-6 py-3 rounded-2xl shadow-lg shadow-[#00ffc6]/15"
-                >
-                  <span>Launch Deepfake Analyzer</span>
-                  <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
-                </Link>
-              </motion.div>
+
             </motion.div>
 
             {/* Right Column: Animated Terminal */}
@@ -380,61 +368,50 @@ export const Home: React.FC = () => {
         </div>
       </section>
 
-      {/* ========================================================================= */}
-      {/* 4. SCROLL REVEAL: API & DEVELOPER INTEGRATION SECTION                     */}
-      {/* ========================================================================= */}
-      <section id="api" className="py-20 px-6 sm:px-10 lg:px-16 bg-[#0E1017] scroll-mt-6 overflow-hidden relative">
-        {/* Transition zone: smooth gradient blend from Documentation bg (#090A0E) to API bg (#0E1017) */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-[#090A0E] to-[#0E1017] z-0" />
 
-        <div className="relative z-10 max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-70px' }}
-            transition={{ duration: 0.7, ease: 'easeOut' }}
-            className="bg-[#151824] rounded-3xl p-8 sm:p-12 border border-white/10 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8"
-          >
-            <div className="max-w-xl">
-              <span className="text-xs uppercase tracking-wider font-semibold text-[#00ffc6] bg-[#00ffc6]/10 px-3 py-1 rounded-full border border-[#00ffc6]/30 font-mono">
-                Developer API
-              </span>
-              <h3 className="text-2xl sm:text-3xl font-bold text-white mt-4 mb-3">
-                Integrate real-time deepfake detection into your pipeline
-              </h3>
-              <p className="text-sm text-gray-400 leading-relaxed mb-6">
-                Our scalable backend endpoints (e.g., <code className="bg-black/50 border border-white/10 px-2 py-0.5 rounded text-[#00ffc6] text-xs font-mono">POST /api/v1/upload</code>) integrate securely into any KYC verification workflow, or media publishing system.
-              </p>
-              <div className="flex flex-wrap items-center gap-4">
-                <Link
-                  to="/analyze"
-                  className="inline-flex items-center gap-2 text-xs font-semibold text-black border border-[#00ffc6] bg-[#00ffc6] hover:bg-[#00ffc6]/90 hover:shadow-[0_0_20px_rgba(0,255,198,0.4),0_0_35px_rgba(0,255,198,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 group px-5 py-2.5 rounded-full shadow-lg shadow-[#00ffc6]/15"
-                >
-                  <span>Try Web Demo</span>
-                  <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-                </Link>
-                <a
-                  href="#technology"
-                  onClick={(e) => handleNavClick(e, 'technology')}
-                  className="text-xs font-medium text-gray-300 hover:text-white border border-white/20 rounded-full px-5 py-2.5 hover:bg-white/5 transition-colors cursor-pointer"
-                >
-                  View Documentation
-                </a>
-              </div>
-            </div>
-
-            <div className="w-full md:w-auto shrink-0 font-mono text-xs bg-black text-gray-100 p-6 rounded-2xl border border-white/10 shadow-2xl min-w-[320px]">
-              <div className="text-gray-500 mb-2">// cURL Upload Example</div>
-              <div className="text-[#00ffc6]">curl -X POST \</div>
-              <div className="text-emerald-400 pl-4">http://localhost:3001/api/v1/upload \</div>
-              <div className="text-amber-300 pl-4">-F "file=@sample_photo.jpg"</div>
-              <div className="mt-4 pt-3 border-t border-white/10 text-gray-500 flex justify-between">
-                <span>Response time</span>
-                <span className="text-emerald-400 font-semibold">~850ms</span>
-              </div>
-            </div>
-          </motion.div>
+      {/* ========================================================================= */}
+      {/* 5. UPLOAD CTA — Single prominent call-to-action section before footer      */}
+      {/* ========================================================================= */}
+      <section id="upload" className="py-24 px-6 sm:px-10 lg:px-16 bg-[#090A0E] scroll-mt-6 relative overflow-hidden">
+        {/* Radial glow background */}
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="w-[700px] h-[400px] bg-[radial-gradient(ellipse_at_center,rgba(0,255,198,0.08),transparent_70%)]" />
         </div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-60px' }}
+          transition={{ duration: 0.75, ease: 'easeOut' }}
+          className="relative z-10 max-w-3xl mx-auto text-center"
+        >
+
+
+          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-6 leading-tight">
+            Upload Your Image
+            <span className="block text-[#00ffc6]">Start Scanning Now</span>
+          </h2>
+
+          <p className="text-sm sm:text-base text-gray-400 leading-relaxed mb-10 max-w-xl mx-auto">
+            Drop any photo — ID documents, portraits, social media images — and our multi-layer AI forensics engine will surface deepfakes, splicing, and synthetic generation in seconds.
+          </p>
+
+          {/* Main CTA button */}
+          <motion.button
+            id="main-upload-cta"
+            onClick={handleUploadClick}
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+            className="group inline-flex items-center gap-3 bg-[#00ffc6] hover:bg-[#00e5b2] text-black font-black text-base sm:text-lg px-10 py-5 rounded-2xl shadow-[0_0_40px_rgba(0,255,198,0.35),0_0_80px_rgba(0,255,198,0.15)] hover:shadow-[0_0_55px_rgba(0,255,198,0.5),0_0_100px_rgba(0,255,198,0.25)] transition-all duration-300"
+          >
+            <Upload className="w-5 h-5" />
+            <span>Upload Your Image</span>
+            <ArrowRight className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
+          </motion.button>
+
+
+        </motion.div>
       </section>
 
       {/* Footer */}
